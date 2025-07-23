@@ -16,4 +16,9 @@ function findAll() {
 function findId(id) {
   return casos.find((caso) => caso.id === id);
 }
-export { findAll, findId };
+
+function addCaso(novoCaso) {
+  casos.push(novoCaso);
+  return novoCaso;
+}
+module.exports = { findAll, findId, addCaso };
