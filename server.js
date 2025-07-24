@@ -1,10 +1,14 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const casosRouter = require("./routes/casosRoutes")
-const PORT = 3000;
 app.use(express.json());
+const casosRouter = require("./routes/casosRoutes");
+const agentesRoutes = require("./routes/agentesRoutes");
+const PORT = 3000;
 app.use(casosRouter);
+app.use(agentesRoutes);
 
 app.listen(PORT, () => {
-    console.log(`Servidor do Departamento de Polícia rodando em http://localhost:${PORT} em modo de desenvolvimento`);
-}); 
+  console.log(
+    `Servidor do Departamento de Polícia rodando em http://localhost:${PORT} em modo de desenvolvimento`
+  );
+});

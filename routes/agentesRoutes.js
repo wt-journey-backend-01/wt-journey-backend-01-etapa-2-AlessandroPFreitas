@@ -1,8 +1,17 @@
-const express = require('express')
+const express = require("express");
 const router = express.Router();
-const agentesController = require('../controllers/agentesController');
+const agentesController = require("../controllers/agentesController");
 
-// define a rota para /agentes usando o método GET
-router.get('/agentes', agentesController.seuMetodo)
+router.get("/agentes", agentesController.getAllAgentes);
 
-module.exports = router
+router.get("/agentes/:id", agentesController.getIdAgente);
+
+router.post("/agentes", agentesController.createAgente);
+
+router.put("/agentes/:id", agentesController.attAgente);
+
+router.patch("/agentes/:id", agentesController.pieceAgente);
+
+router.delete("/agentes/:id", agentesController.removeAgente);
+
+module.exports = router;

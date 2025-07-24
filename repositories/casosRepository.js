@@ -21,4 +21,44 @@ function addCaso(novoCaso) {
   casos.push(novoCaso);
   return novoCaso;
 }
-module.exports = { findAll, findId, addCaso };
+
+function attCaso(id, updatedCaso) {
+  const casoIndex = casos.findIndex((caso) => caso.id === id);
+  if (casoIndex === -1) {
+    return undefined;
+  }
+  casos[casoIndex] = { ...casos[casoIndex], ...updatedCaso };
+  return casos[casoIndex];
+}
+
+function partialCaso(id, updateCaso) {
+  const casoIndex = casos.findIndex((caso) => caso.id === id);
+  if (casoIndex === -1) {
+    return undefined;
+  }
+
+  if (updateCaso.titulo !== undefined) {
+    casos[casoIndex].titulo = updateCaso.titulo;
+  }
+  if (updateCaso.descricao !== undefined) {
+    casos[casoIndex].descricao = updateCaso.descricao;
+  }
+  if (updateCaso.status !== undefined) {
+    casos[casoIndex].status = updateCaso.status;
+  }
+  if (updateCaso.agente_id !== undefined) {
+    casos[casoIndex].agente_id = updateCaso.agente_id;
+  }
+
+  return casos[casoIndex];
+}
+
+function deleteCaso(id) {
+  const casoIndex = casos.findIndex((caso) => caso.id === id);
+  if (casoIndex !== -1) {
+    return casos.splice(casoIndex, 1);
+  }
+
+}
+
+module.exports = { findAll, findId, addCaso, attCaso, partialCaso, deleteCaso };
