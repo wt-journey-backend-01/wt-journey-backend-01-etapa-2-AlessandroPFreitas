@@ -4,6 +4,7 @@ app.use(express.json());
 const casosRouter = require("./routes/casosRoutes");
 const agentesRoutes = require("./routes/agentesRoutes");
 const PORT = 3000;
+
 app.use(casosRouter);
 app.use(agentesRoutes);
 
