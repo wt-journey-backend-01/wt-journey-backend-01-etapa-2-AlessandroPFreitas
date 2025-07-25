@@ -8,7 +8,7 @@ const dataValidation = (data) => {
 
 function getAllAgentes(req, res) {
   const agentes = agentesRepository.findAll();
-  res.status(200).json(agentes);
+  res.json(agentes);
 }
 
 function getIdAgente(req, res) {

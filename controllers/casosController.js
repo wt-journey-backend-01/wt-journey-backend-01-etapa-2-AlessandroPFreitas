@@ -1,7 +1,5 @@
 const { v4: uuidv4 } = require("uuid");
 const casosRepository = require("../repositories/casosRepository");
-const agentesRepository = require("../repositories/agentesRepository");
-
 function getAllCasos(req, res) {
   const casos = casosRepository.findAll();
   res.json(casos);
@@ -11,7 +9,7 @@ function getIdCasos(req, res) {
   const id = req.params.id;
   const caso = casosRepository.findId(id);
   if (!caso) {
-    return res.status(404).json({ message: "Caso não encontrado!" });
+    return req.status(404).json({ mensagem: "Caso não encontrado!" });
   }
   res.json(caso);
 }
@@ -32,12 +30,6 @@ function createCaso(req, res) {
       .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado'." });
   }
 
-  // Validação do agente_id
-  const agente = agentesRepository.findId(agente_id);
-  if (!agente) {
-    return res.status(404).json({ mensagem: "Agente não encontrado!" });
-  }
-
   const novoCaso = {
     id: uuidv4(),
     titulo,
@@ -52,22 +44,22 @@ function createCaso(req, res) {
 
 function updateCaso(req, res) {
   const id = req.params.id;
+
   const { titulo, descricao, status, agente_id } = req.body;
 
   if (!titulo || !descricao || !status || !agente_id) {
     return res
       .status(400)
-      .json({ messagem: "Todos os campo são obrigatorios!" });
+      .json({ mensagem: "Todos os campo são obrigatorios!" });
   }
 
   const statusPermitidos = ["aberto", "solucionado"];
   if (!statusPermitidos.includes(status)) {
-    return res
+    res
       .status(400)
-      .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado'." });
+      .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
   }
 
-  // Validação do agente_id também no update!
   const agente = agentesRepository.findId(agente_id);
   if (!agente) {
     return res.status(404).json({ mensagem: "Agente não encontrado!" });
@@ -82,7 +74,7 @@ function updateCaso(req, res) {
 
   const casoAtualizado = casosRepository.attCaso(id, updateCaso);
   if (!casoAtualizado) {
-    return res.status(404).json({ mensagem: "O caso não existe!" });
+    res.status(404).json({ mensagem: "O caso não existe!" });
   }
   return res.status(200).json(casoAtualizado);
 }
@@ -102,14 +94,13 @@ function patchCaso(req, res) {
   if (status !== undefined) {
     const statusPermitidos = ["aberto", "solucionado"];
     if (!statusPermitidos.includes(status)) {
-      return res
+      res
         .status(400)
-        .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado'." });
+        .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
     }
     attCaso.status = status;
   }
   if (agente_id !== undefined) {
-    // Validação do agente_id no patch também!
     const agente = agentesRepository.findId(agente_id);
     if (!agente) {
       return res.status(404).json({ mensagem: "Agente não encontrado!" });
@@ -118,16 +109,33 @@ function patchCaso(req, res) {
   }
 
   if (Object.keys(attCaso).length === 0) {
-    return res
+    res
       .status(400)
       .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
   }
 
-  const casoAtualizado = casosRepository.attCaso(id, attCaso);
+  const casoAtualizado = casosRepository.partialCaso(id, updateCaso);
   if (!casoAtualizado) {
-    return res.status(404).json({ mensagem: "O caso não existe!" });
+    return res.status(404).json({ mensagem: "Caso não encontrado!" });
   }
   return res.status(200).json(casoAtualizado);
 }
 
-module.exports = { getAllCasos, getIdCasos, createCaso, updateCaso, patchCaso };
+function removeCaso(req, res) {
+  const id = req.params.id;
+  const casoDeletado = casosRepository.deleteCaso(id);
+  if (!casoDeletado) {
+    return res.status(404).json({ mensagem: "Caso não encontrado!" });
+  }
+
+  return res.status(204).json({ mensagem: "Caso removido!" });
+}
+
+module.exports = {
+  getAllCasos,
+  getIdCasos,
+  createCaso,
+  updateCaso,
+  patchCaso,
+  removeCaso,
+};
