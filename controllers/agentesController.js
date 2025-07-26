@@ -1,5 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const agentesRepository = require("../repositories/agentesRepository");
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const dataValidation = (data) => {
   const regex = /^\d{4}\/\d{2}\/\d{2}$/;
@@ -13,10 +15,15 @@ function getAllAgentes(req, res) {
 
 function getIdAgente(req, res) {
   const id = req.params.id;
-
+    if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const agenteId = agentesRepository.findId(id);
   if (!agenteId) {
-    res.status(404).json({ mensagem: "Esse agente não existe!" });
+    return res.status(404).json({ mensagem: "Esse agente não existe!" });
   }
 
   return res.status(200).json(agenteId);
@@ -48,6 +55,9 @@ function createAgente(req, res) {
 
 function attAgente(req, res) {
   const id = req.params.id;
+    if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const { nome, dataDeIncorporacao, cargo } = req.body;
   if (!nome || !dataDeIncorporacao || !cargo) {
     return res
@@ -76,13 +86,19 @@ function attAgente(req, res) {
 
 function pieceAgente(req, res) {
   const id = req.params.id;
+    if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const { nome, dataDeIncorporacao, cargo } = req.body;
   const agente = {};
   if (nome !== undefined) {
     agente.nome = nome;
   }
-  if (dataDeIncorporacao !== undefined && dataValidation(dataDeIncorporacao)) {
-    agente.dataDeIncorporacao = dataDeIncorporacao;
+  if (dataDeIncorporacao !== undefined) {
+    if (!dataValidation(dataDeIncorporacao)) {
+      res.status(400).json({ mensagem: "A data está no formato errado!" });
+    }
+    return (agente.dataDeIncorporacao = dataDeIncorporacao);
   }
   if (cargo !== undefined) {
     agente.cargo = cargo;
@@ -102,13 +118,16 @@ function pieceAgente(req, res) {
 
 function removeAgente(req, res) {
   const id = req.params.id;
+    if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const agenteDeletado = agentesRepository.deleteAgente(id);
 
   if (!agenteDeletado) {
     return res.status(404).json({ mensagem: "Caso não encontrado!" });
   }
 
-  return res.status(204).json({ mensagem: "Caso removido!" });
+  return res.status(204).send();
 }
 
 module.exports = {

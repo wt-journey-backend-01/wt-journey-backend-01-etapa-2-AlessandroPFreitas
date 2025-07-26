@@ -1,5 +1,9 @@
 const { v4: uuidv4 } = require("uuid");
 const casosRepository = require("../repositories/casosRepository");
+const agentesRepository = require("../repositories/agentesRepository");
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function getAllCasos(req, res) {
   const casos = casosRepository.findAll();
   res.json(casos);
@@ -8,8 +12,11 @@ function getAllCasos(req, res) {
 function getIdCasos(req, res) {
   const id = req.params.id;
   const caso = casosRepository.findId(id);
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   if (!caso) {
-    return req.status(404).json({ mensagem: "Caso não encontrado!" });
+    return res.status(404).json({ mensagem: "Caso não encontrado!" });
   }
   res.json(caso);
 }
@@ -44,7 +51,9 @@ function createCaso(req, res) {
 
 function updateCaso(req, res) {
   const id = req.params.id;
-
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const { titulo, descricao, status, agente_id } = req.body;
 
   if (!titulo || !descricao || !status || !agente_id) {
@@ -81,6 +90,9 @@ function updateCaso(req, res) {
 
 function patchCaso(req, res) {
   const id = req.params.id;
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const { titulo, descricao, status, agente_id } = req.body;
 
   const attCaso = {};
@@ -114,7 +126,7 @@ function patchCaso(req, res) {
       .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
   }
 
-  const casoAtualizado = casosRepository.partialCaso(id, updateCaso);
+  const casoAtualizado = casosRepository.partialCaso(id, attCaso);
   if (!casoAtualizado) {
     return res.status(404).json({ mensagem: "Caso não encontrado!" });
   }
@@ -123,12 +135,15 @@ function patchCaso(req, res) {
 
 function removeCaso(req, res) {
   const id = req.params.id;
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  }
   const casoDeletado = casosRepository.deleteCaso(id);
   if (!casoDeletado) {
     return res.status(404).json({ mensagem: "Caso não encontrado!" });
   }
 
-  return res.status(204).json({ mensagem: "Caso removido!" });
+  return res.status(204).send();
 }
 
 module.exports = {
