@@ -54,11 +54,11 @@ function partialCaso(id, updateCaso) {
 }
 
 function deleteCaso(id) {
-  const casoIndex = casos.findIndex((caso) => caso.id === id);
-  if (casoIndex !== -1) {
-    return casos.splice(casoIndex, 1);
-  }
+  const casoIndex = this.casos.findIndex((caso) => caso.id === id);
+  if (casoIndex !== -1) return null;
 
+  const [removido] = this.casos.splice(casoIndex, 1);
+  return removido;
 }
 
 module.exports = { findAll, findId, addCaso, attCaso, partialCaso, deleteCaso };

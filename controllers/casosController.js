@@ -11,10 +11,10 @@ function getAllCasos(req, res) {
 
 function getIdCasos(req, res) {
   const id = req.params.id;
-  const caso = casosRepository.findId(id);
   if (!uuidRegex.test(id)) {
     return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
   }
+  const caso = casosRepository.findId(id);
   if (!caso) {
     return res.status(404).json({ mensagem: "Caso não encontrado!" });
   }
@@ -24,10 +24,14 @@ function getIdCasos(req, res) {
 function createCaso(req, res) {
   const { titulo, descricao, status, agente_id } = req.body;
 
-  if (!titulo || !descricao || !status || !agente_id) {
+  if (!titulo || !descricao || !status || agente_id) {
     return res
       .status(400)
       .json({ mensagem: "Todos os campos são obrigatorios!" });
+  }
+  const agente = agentesRepository.findId(agente_id);
+  if (!agente) {
+    return res.status(404).json({ mensagem: "Agente não encontrado!" });
   }
 
   const statusPermitidos = ["aberto", "solucionado"];
@@ -64,7 +68,7 @@ function updateCaso(req, res) {
 
   const statusPermitidos = ["aberto", "solucionado"];
   if (!statusPermitidos.includes(status)) {
-    res
+   return res
       .status(400)
       .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
   }

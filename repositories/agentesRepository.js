@@ -40,11 +40,11 @@ function patchAgente(id, updateAgente) {
 }
 
 function deleteAgente(id) {
-  const agenteIndex = agentes.findIndex((agente) => agente.id === id);
-  if (agenteIndex !== -1) {
-    return agentes.splice(agenteIndex, 1);
+ const index = this.agentes.findIndex(agente => agente.id === id);
+  if (index === -1) return null;
+  const [removido] = this.agentes.splice(index, 1);
+  return removido; 
   }
-}
 
 module.exports = {
   findAll,

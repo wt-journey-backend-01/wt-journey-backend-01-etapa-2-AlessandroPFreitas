@@ -15,9 +15,6 @@ function getAllAgentes(req, res) {
 
 function getIdAgente(req, res) {
   const id = req.params.id;
-    if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
-  }
   if (!uuidRegex.test(id)) {
     return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
   }
@@ -55,13 +52,13 @@ function createAgente(req, res) {
 
 function attAgente(req, res) {
   const id = req.params.id;
-    if (!uuidRegex.test(id)) {
+  if (!uuidRegex.test(id)) {
     return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
   }
   const { nome, dataDeIncorporacao, cargo } = req.body;
   if (!nome || !dataDeIncorporacao || !cargo) {
     return res
-      .status(404)
+      .status(400)
       .json({ mensagem: "Todos os campo são obrigatorios!" });
   }
 
@@ -86,7 +83,7 @@ function attAgente(req, res) {
 
 function pieceAgente(req, res) {
   const id = req.params.id;
-    if (!uuidRegex.test(id)) {
+  if (!uuidRegex.test(id)) {
     return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
   }
   const { nome, dataDeIncorporacao, cargo } = req.body;
@@ -96,9 +93,11 @@ function pieceAgente(req, res) {
   }
   if (dataDeIncorporacao !== undefined) {
     if (!dataValidation(dataDeIncorporacao)) {
-      res.status(400).json({ mensagem: "A data está no formato errado!" });
+      return res
+        .status(400)
+        .json({ mensagem: "A data está no formato errado!" });
     }
-    return (agente.dataDeIncorporacao = dataDeIncorporacao);
+    agente.dataDeIncorporacao = dataDeIncorporacao;
   }
   if (cargo !== undefined) {
     agente.cargo = cargo;
@@ -118,13 +117,13 @@ function pieceAgente(req, res) {
 
 function removeAgente(req, res) {
   const id = req.params.id;
-    if (!uuidRegex.test(id)) {
+  if (!uuidRegex.test(id)) {
     return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
   }
-  const agenteDeletado = agentesRepository.deleteAgente(id);
 
+  const agenteDeletado = agentesRepository.deleteAgente(id);
   if (!agenteDeletado) {
-    return res.status(404).json({ mensagem: "Caso não encontrado!" });
+    return res.status(404).json({ mensagem: "Agente não encontrado!" });
   }
 
   return res.status(204).send();
