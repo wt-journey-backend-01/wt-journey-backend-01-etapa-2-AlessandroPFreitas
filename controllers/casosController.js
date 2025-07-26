@@ -1,5 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const casosRepository = require("../repositories/casosRepository");
+const agentesRepository = require("../repositories/agentesRepository");
+const { errorHandler, isValidUUID } = require("../utils/errorHandler");
 function getAllCasos(req, res) {
   const casos = casosRepository.findAll();
   res.json(casos);
@@ -7,27 +9,40 @@ function getAllCasos(req, res) {
 
 function getIdCasos(req, res) {
   const id = req.params.id;
+  
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
+  }
+  
   const caso = casosRepository.findId(id);
   if (!caso) {
-    return req.status(404).json({ mensagem: "Caso não encontrado!" });
+    return errorHandler.notFound(res, "Caso não encontrado!");
   }
-  res.json(caso);
+  return errorHandler.success(res, caso);
 }
 
 function createCaso(req, res) {
   const { titulo, descricao, status, agente_id } = req.body;
 
   if (!titulo || !descricao || !status || !agente_id) {
-    return res
-      .status(400)
-      .json({ mensagem: "Todos os campos são obrigatorios!" });
+    return errorHandler.missingFields(res);
+  }
+
+  // Validate agent ID is a valid UUID
+  if (!isValidUUID(agente_id)) {
+    return errorHandler.invalidUUID(res, "ID do agente deve ser um UUID válido");
   }
 
   const statusPermitidos = ["aberto", "solucionado"];
   if (!statusPermitidos.includes(status)) {
-    return res
-      .status(400)
-      .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado'." });
+    return errorHandler.invalidField(res, "Status", statusPermitidos);
+  }
+
+  // Validate if agent exists
+  const agente = agentesRepository.findId(agente_id);
+  if (!agente) {
+    return errorHandler.notFound(res, "Agente não encontrado!");
   }
 
   const novoCaso = {
@@ -39,30 +54,36 @@ function createCaso(req, res) {
   };
 
   casosRepository.addCaso(novoCaso);
-  return res.status(201).json(novoCaso);
+  return errorHandler.success(res, novoCaso, 201);
 }
 
 function updateCaso(req, res) {
   const id = req.params.id;
 
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
+  }
+
   const { titulo, descricao, status, agente_id } = req.body;
 
   if (!titulo || !descricao || !status || !agente_id) {
-    return res
-      .status(400)
-      .json({ mensagem: "Todos os campo são obrigatorios!" });
+    return errorHandler.missingFields(res);
+  }
+
+  // Validate agent ID is a valid UUID
+  if (!isValidUUID(agente_id)) {
+    return errorHandler.invalidUUID(res, "ID do agente deve ser um UUID válido");
   }
 
   const statusPermitidos = ["aberto", "solucionado"];
   if (!statusPermitidos.includes(status)) {
-    res
-      .status(400)
-      .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
+    return errorHandler.invalidField(res, "Status", statusPermitidos);
   }
 
   const agente = agentesRepository.findId(agente_id);
   if (!agente) {
-    return res.status(404).json({ mensagem: "Agente não encontrado!" });
+    return errorHandler.notFound(res, "Agente não encontrado!");
   }
 
   const updateCaso = {
@@ -74,61 +95,74 @@ function updateCaso(req, res) {
 
   const casoAtualizado = casosRepository.attCaso(id, updateCaso);
   if (!casoAtualizado) {
-    res.status(404).json({ mensagem: "O caso não existe!" });
+    return errorHandler.notFound(res, "Caso não encontrado!");
   }
-  return res.status(200).json(casoAtualizado);
+  return errorHandler.success(res, casoAtualizado);
 }
 
 function patchCaso(req, res) {
   const id = req.params.id;
+
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
+  }
+
   const { titulo, descricao, status, agente_id } = req.body;
 
-  const attCaso = {};
+  const updateCaso = {};
 
   if (titulo !== undefined) {
-    attCaso.titulo = titulo;
+    updateCaso.titulo = titulo;
   }
   if (descricao !== undefined) {
-    attCaso.descricao = descricao;
+    updateCaso.descricao = descricao;
   }
   if (status !== undefined) {
     const statusPermitidos = ["aberto", "solucionado"];
     if (!statusPermitidos.includes(status)) {
-      res
-        .status(400)
-        .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
+      return errorHandler.invalidField(res, "Status", statusPermitidos);
     }
-    attCaso.status = status;
+    updateCaso.status = status;
   }
   if (agente_id !== undefined) {
+    // Validate agent ID is a valid UUID
+    if (!isValidUUID(agente_id)) {
+      return errorHandler.invalidUUID(res, "ID do agente deve ser um UUID válido");
+    }
+
     const agente = agentesRepository.findId(agente_id);
     if (!agente) {
-      return res.status(404).json({ mensagem: "Agente não encontrado!" });
+      return errorHandler.notFound(res, "Agente não encontrado!");
     }
-    attCaso.agente_id = agente_id;
+    updateCaso.agente_id = agente_id;
   }
 
-  if (Object.keys(attCaso).length === 0) {
-    res
-      .status(400)
-      .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
+  if (Object.keys(updateCaso).length === 0) {
+    return errorHandler.noFieldsForUpdate(res);
   }
 
   const casoAtualizado = casosRepository.partialCaso(id, updateCaso);
   if (!casoAtualizado) {
-    return res.status(404).json({ mensagem: "Caso não encontrado!" });
+    return errorHandler.notFound(res, "Caso não encontrado!");
   }
-  return res.status(200).json(casoAtualizado);
+  return errorHandler.success(res, casoAtualizado);
 }
 
 function removeCaso(req, res) {
   const id = req.params.id;
-  const casoDeletado = casosRepository.deleteCaso(id);
-  if (!casoDeletado) {
-    return res.status(404).json({ mensagem: "Caso não encontrado!" });
+
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
   }
 
-  return res.status(204).json({ mensagem: "Caso removido!" });
+  const casoDeletado = casosRepository.deleteCaso(id);
+  if (!casoDeletado) {
+    return errorHandler.notFound(res, "Caso não encontrado!");
+  }
+
+  return errorHandler.noContent(res);
 }
 
 module.exports = {

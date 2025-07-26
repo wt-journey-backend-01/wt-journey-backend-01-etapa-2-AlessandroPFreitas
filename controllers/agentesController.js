@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const agentesRepository = require("../repositories/agentesRepository");
+const { errorHandler, isValidUUID } = require("../utils/errorHandler");
 
 const dataValidation = (data) => {
   const regex = /^\d{4}\/\d{2}\/\d{2}$/;
@@ -14,26 +15,27 @@ function getAllAgentes(req, res) {
 function getIdAgente(req, res) {
   const id = req.params.id;
 
-  const agenteId = agentesRepository.findId(id);
-  if (!agenteId) {
-    res.status(404).json({ mensagem: "Esse agente não existe!" });
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
   }
 
-  return res.status(200).json(agenteId);
+  const agenteId = agentesRepository.findId(id);
+  if (!agenteId) {
+    return errorHandler.notFound(res, "Esse agente não existe!");
+  }
+
+  return errorHandler.success(res, agenteId);
 }
 
 function createAgente(req, res) {
   const { nome, dataDeIncorporacao, cargo } = req.body;
   if (!nome || !dataDeIncorporacao || !cargo) {
-    return res
-      .status(400)
-      .json({ mensagem: "Todos os campos são obrigatorios!" });
+    return errorHandler.missingFields(res);
   }
 
   if (!dataValidation(dataDeIncorporacao)) {
-    return res
-      .status(400)
-      .json({ mensagem: "Data incorreta, tente nesse formato YYYY/MM/DD." });
+    return errorHandler.badRequest(res, "Data incorreta, tente nesse formato YYYY/MM/DD.");
   }
   const agente = {
     id: uuidv4(),
@@ -43,22 +45,24 @@ function createAgente(req, res) {
   };
 
   const newAgente = agentesRepository.newAgente(agente);
-  return res.status(201).json(newAgente);
+  return errorHandler.success(res, newAgente, 201);
 }
 
 function attAgente(req, res) {
   const id = req.params.id;
+
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
+  }
+
   const { nome, dataDeIncorporacao, cargo } = req.body;
   if (!nome || !dataDeIncorporacao || !cargo) {
-    return res
-      .status(404)
-      .json({ mensagem: "Todos os campo são obrigatorios!" });
+    return errorHandler.missingFields(res);
   }
 
   if (!dataValidation(dataDeIncorporacao)) {
-    return res
-      .status(400)
-      .json({ mensagem: "Data incorreta, tente nesse formato YYYY/MM/DD." });
+    return errorHandler.badRequest(res, "Data incorreta, tente nesse formato YYYY/MM/DD.");
   }
 
   const agente = {
@@ -69,46 +73,61 @@ function attAgente(req, res) {
 
   const updateAgente = agentesRepository.putAgente(id, agente);
   if (!updateAgente) {
-    return res.status(404).json({ mensagem: "O agente não existe" });
+    return errorHandler.notFound(res, "Agente não encontrado!");
   }
-  return res.status(200).json(updateAgente);
+  return errorHandler.success(res, updateAgente);
 }
 
 function pieceAgente(req, res) {
   const id = req.params.id;
-  const { nome, dataDeIncorporacao, cargo } = req.body;
-  const agente = {};
-  if (nome !== undefined) {
-    agente.nome = nome;
-  }
-  if (dataDeIncorporacao !== undefined && dataValidation(dataDeIncorporacao)) {
-    agente.dataDeIncorporacao = dataDeIncorporacao;
-  }
-  if (cargo !== undefined) {
-    agente.cargo = cargo;
+
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
   }
 
-  if (Object.keys(agente).length === 0) {
-    res
-      .status(400)
-      .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
+  const { nome, dataDeIncorporacao, cargo } = req.body;
+  const updateAgente = {};
+  
+  if (nome !== undefined) {
+    updateAgente.nome = nome;
   }
-  const updateAgente = agentesRepository.patchAgente(id, agente);
-  if (!updateAgente) {
-    return res.status(404).json({ mensagem: "Esse agente não existe!" });
+  if (dataDeIncorporacao !== undefined) {
+    if (!dataValidation(dataDeIncorporacao)) {
+      return errorHandler.badRequest(res, "Data incorreta, tente nesse formato YYYY/MM/DD.");
+    }
+    updateAgente.dataDeIncorporacao = dataDeIncorporacao;
   }
-  return res.status(200).json(updateAgente);
+  if (cargo !== undefined) {
+    updateAgente.cargo = cargo;
+  }
+
+  if (Object.keys(updateAgente).length === 0) {
+    return errorHandler.noFieldsForUpdate(res);
+  }
+  
+  const agenteAtualizado = agentesRepository.patchAgente(id, updateAgente);
+  if (!agenteAtualizado) {
+    return errorHandler.notFound(res, "Esse agente não existe!");
+  }
+  return errorHandler.success(res, agenteAtualizado);
 }
 
 function removeAgente(req, res) {
   const id = req.params.id;
+
+  // Validate UUID
+  if (!isValidUUID(id)) {
+    return errorHandler.invalidUUID(res);
+  }
+
   const agenteDeletado = agentesRepository.deleteAgente(id);
 
   if (!agenteDeletado) {
-    return res.status(404).json({ mensagem: "Caso não encontrado!" });
+    return errorHandler.notFound(res, "Agente não encontrado!");
   }
 
-  return res.status(204).json({ mensagem: "Caso removido!" });
+  return errorHandler.noContent(res);
 }
 
 module.exports = {
