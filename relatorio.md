@@ -1,225 +1,224 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 4 créditos restantes para usar o sistema de feedback AI.
+Você tem 3 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para AlessandroPFreitas:
 
-Nota final: **26.3/100**
+Nota final: **18.5/100**
 
-Olá, AlessandroPFreitas! 👋🚓
+Olá AlessandroPFreitas! 👋😊
 
-Antes de tudo, parabéns pelo esforço e por ter avançado bastante nesse desafio complexo de construir uma API RESTful para o Departamento de Polícia! 🎉 Você estruturou seu projeto com rotas, controllers e repositories, usou UUID para os IDs, validou dados e tratou erros em vários pontos importantes. Isso é um baita passo para frente no seu aprendizado com Node.js e Express! 👏
+Primeiramente, quero te parabenizar pelo esforço em montar toda a estrutura da sua API para o Departamento de Polícia! 🚓 Você organizou seu projeto em pastas de rotas, controllers e repositories, exatamente como esperado. Isso é fundamental para manter o código limpo e escalável. Além disso, você já implementou vários endpoints, validações de UUID, status HTTP corretos e tratamento de erros básicos — isso mostra que você está no caminho certo! 👏🎉
 
----
-
-## O que você mandou bem! 🌟
-
-- Sua **organização modular** está correta, com rotas, controllers e repositories bem separados. Isso é fundamental para manter o código limpo e escalável.
-- Você usou o pacote `uuid` para gerar IDs únicos, o que é ótimo para evitar conflitos.
-- Implementou validações básicas, como verificar campos obrigatórios e formatos (por exemplo, a data de incorporação do agente).
-- Tratou erros com status HTTP apropriados em muitos casos (400, 404, 201, 204).
-- Implementou todos os métodos HTTP principais (GET, POST, PUT, PATCH, DELETE) para os recursos `/agentes` e `/casos`.
-- Conseguiu fazer funcionar a validação de payloads mal formatados e IDs inválidos para agentes e casos.
-- Mesmo que os testes bônus não tenham passado, você tentou implementar filtros, ordenação e mensagens personalizadas, o que mostra iniciativa! 💪
+Também notei que você conseguiu passar os testes de validação de payloads com status 400, o que significa que seu código está preparado para lidar com dados mal formatados. Isso é um ponto muito positivo! 👍
 
 ---
 
-## O que você pode melhorar para destravar sua API 🚦
-
-### 1. Validação do ID UUID para agentes e casos — atenção na ordem!
-
-Eu notei que em alguns lugares você verifica o formato UUID **depois** de já buscar o recurso no repositório. Por exemplo, no seu `getIdCasos`:
-
-```js
-function getIdCasos(req, res) {
-  const id = req.params.id;
-  const caso = casosRepository.findId(id);
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
-  }
-  if (!caso) {
-    return res.status(404).json({ mensagem: "Caso não encontrado!" });
-  }
-  res.json(caso);
-}
-```
-
-Aqui, você está buscando o caso **antes** de validar se o ID é um UUID válido. Isso pode causar problemas, porque você pode estar tentando buscar um ID que sequer tem formato válido. O ideal é validar o ID **antes** de qualquer operação, para evitar buscas desnecessárias e garantir o fluxo correto de erros.
-
-**Como corrigir?** Troque a ordem para validar o ID antes da busca:
-
-```js
-function getIdCasos(req, res) {
-  const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
-  }
-  const caso = casosRepository.findId(id);
-  if (!caso) {
-    return res.status(404).json({ mensagem: "Caso não encontrado!" });
-  }
-  res.json(caso);
-}
-```
-
-Faça o mesmo para os métodos de agentes (`getIdAgente`, `attAgente`, `pieceAgente`, `removeAgente`) e casos.
+### Agora, vamos conversar sobre alguns pontos importantes que precisam da sua atenção para destravar a funcionalidade completa da sua API, ok? 🕵️‍♂️🔍
 
 ---
 
-### 2. Validação de existência do agente ao criar ou atualizar casos — fundamental!
+## 1. Problemas nas funções de exclusão (DELETE) nos repositories
 
-Vi que no seu `createCaso` você não está validando se o `agente_id` passado realmente existe no repositório de agentes. Isso permite criar casos associados a agentes inexistentes, o que não pode acontecer.
+### O que eu encontrei?
 
-No seu código atual:
+No seu arquivo `repositories/agentesRepository.js`, a função `deleteAgente` está assim:
 
 ```js
-function createCaso(req, res) {
-  const { titulo, descricao, status, agente_id } = req.body;
-
-  if (!titulo || !descricao || !status || !agente_id) {
-    return res.status(400).json({ mensagem: "Todos os campos são obrigatorios!" });
-  }
-
-  const statusPermitidos = ["aberto", "solucionado"];
-  if (!statusPermitidos.includes(status)) {
-    return res.status(400).json({ mensagem: "Status deve ser 'aberto' ou 'solucionado'." });
-  }
-
-  const novoCaso = {
-    id: uuidv4(),
-    titulo,
-    descricao,
-    status,
-    agente_id,
-  };
-
-  casosRepository.addCaso(novoCaso);
-  return res.status(201).json(novoCaso);
+function deleteAgente(id) {
+  const index = this.agentes.findIndex(agente => agente.id === id);
+  if (index === -1) return null;
+  const [removido] = this.agentes.splice(index, 1);
+  return removido; 
 }
 ```
 
-**Aqui falta a validação do agente!**
-
-Você precisa verificar se o agente existe antes de criar o caso:
+E no `repositories/casosRepository.js`, a função `deleteCaso` está assim:
 
 ```js
-const agente = agentesRepository.findId(agente_id);
-if (!agente) {
-  return res.status(404).json({ mensagem: "Agente não encontrado!" });
+function deleteCaso(id) {
+  const casoIndex = this.casos.findIndex((caso) => caso.id === id);
+  if (casoIndex !== -1) return null;
+
+  const [removido] = this.casos.splice(casoIndex, 1);
+  return removido;
 }
 ```
 
-Inclua essa verificação logo após validar os campos obrigatórios e antes de adicionar o novo caso.
+### Por que isso é um problema?
+
+- Você está usando `this.agentes` e `this.casos`, mas essas variáveis **não existem no contexto do `this`** dentro dessas funções, pois `agentes` e `casos` são arrays definidos no escopo do módulo, e não propriedades de um objeto.
+- Além disso, na função `deleteCaso`, a condição do `if` está invertida: você retorna `null` se o índice **existe** (`casoIndex !== -1`), mas deveria retornar `null` se **não existe** (`casoIndex === -1`).
+
+### Como corrigir?
+
+Você deve acessar diretamente os arrays `agentes` e `casos`, sem usar `this`, e corrigir a lógica da condição no `deleteCaso`. Veja abaixo uma versão corrigida para ambos:
+
+```js
+// agentesRepository.js
+function deleteAgente(id) {
+  const index = agentes.findIndex(agente => agente.id === id);
+  if (index === -1) return null;
+  const [removido] = agentes.splice(index, 1);
+  return removido; 
+}
+
+// casosRepository.js
+function deleteCaso(id) {
+  const casoIndex = casos.findIndex(caso => caso.id === id);
+  if (casoIndex === -1) return null;
+
+  const [removido] = casos.splice(casoIndex, 1);
+  return removido;
+}
+```
 
 ---
 
-### 3. Retornos de status e respostas incompletas em alguns métodos
+## 2. Validação incorreta no método POST para criação de casos (`createCaso`)
 
-Existem alguns pontos onde você esqueceu de retornar a resposta ou o status correto após enviar a resposta, ou não usou `return` antes de enviar uma resposta, o que pode causar problemas.
+### O que eu encontrei?
 
-Exemplo no método `pieceAgente`:
-
-```js
-if (!dataValidation(dataDeIncorporacao)) {
-  res.status(400).json({ mensagem: "A data está no formato errado!" });
-}
-return (agente.dataDeIncorporacao = dataDeIncorporacao);
-```
-
-Aqui você envia a resposta de erro, mas não retorna para interromper o fluxo, e ainda faz um `return` estranho que só atribui o valor. O correto seria:
+No seu `controllers/casosController.js`, o método `createCaso` tem esta condição para validar os campos:
 
 ```js
-if (!dataValidation(dataDeIncorporacao)) {
-  return res.status(400).json({ mensagem: "A data está no formato errado!" });
+if (!titulo || !descricao || !status || agente_id) {
+  return res
+    .status(400)
+    .json({ mensagem: "Todos os campos são obrigatorios!" });
 }
-agente.dataDeIncorporacao = dataDeIncorporacao;
 ```
 
-Outro exemplo no `updateCaso`:
+### Por que isso é um problema?
+
+- Você está usando `|| agente_id` sem o operador de negação (`!`), então essa condição sempre será verdadeira se `agente_id` tiver algum valor (mesmo que válido).
+- Isso faz com que a validação falhe sempre, impedindo a criação de casos.
+
+### Como corrigir?
+
+O correto é verificar se **todos** os campos são preenchidos, usando `!` para todos:
+
+```js
+if (!titulo || !descricao || !status || !agente_id) {
+  return res
+    .status(400)
+    .json({ mensagem: "Todos os campos são obrigatórios!" });
+}
+```
+
+---
+
+## 3. Retorno incorreto em algumas respostas HTTP
+
+### Exemplos que encontrei:
+
+- Em `updateCaso` no `casosController.js`, quando o caso não é encontrado, você não está retornando a resposta após enviar o status 404:
+
+```js
+if (!casoAtualizado) {
+  res.status(404).json({ mensagem: "O caso não existe!" });
+}
+return res.status(200).json(casoAtualizado);
+```
+
+Aqui, o correto é usar `return` para evitar que o código continue e envie mais de uma resposta:
+
+```js
+if (!casoAtualizado) {
+  return res.status(404).json({ mensagem: "O caso não existe!" });
+}
+return res.status(200).json(casoAtualizado);
+```
+
+- O mesmo acontece em outras funções, como `patchCaso` e `pieceAgente` — sempre que você envia uma resposta, deve usar `return` para evitar erros.
+
+---
+
+## 4. Penalidade: IDs usados não são UUIDs válidos
+
+Você recebeu uma penalidade porque os IDs usados para agentes e casos **não são UUIDs válidos**.
+
+### Por que isso acontece?
+
+- No seu `repositories/agentesRepository.js` e `casosRepository.js`, os dados iniciais possuem IDs que parecem UUIDs, mas é importante garantir que eles estejam no formato correto.
+- Além disso, você faz validação de UUID nos controllers, mas se os dados iniciais não estiverem corretos, isso pode gerar erros.
+
+### Como corrigir?
+
+- Verifique se os IDs iniciais estão corretos e válidos (parecem estar, mas vale revisar).
+- Também, na criação dos novos registros, você está usando `uuidv4()`, o que é ótimo.
+
+---
+
+## 5. Pequenos detalhes que podem causar erros
+
+- No `pieceAgente` (PATCH para agentes), você esqueceu de colocar `return` antes de `res.status(400).json(...)` quando não há campos para atualizar:
+
+```js
+if (Object.keys(agente).length === 0) {
+  return res
+    .status(400)
+    .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
+}
+```
+
+- No `patchCaso`, quando o status é inválido, você está enviando resposta, mas não faz `return`, o que pode causar erro:
 
 ```js
 if (!statusPermitidos.includes(status)) {
-  res.status(400).json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
-}
-```
-
-Aqui falta o `return` para interromper o fluxo após enviar a resposta de erro.
-
-Sempre que você enviar uma resposta de erro com `res.status(...).json(...)`, coloque um `return` para garantir que o código não continue executando depois.
-
----
-
-### 4. Pequenos detalhes que impactam a experiência da API
-
-- Nas mensagens de erro e validação, tente manter consistência e clareza, por exemplo, no `attAgente` você retorna 404 para campos obrigatórios faltando, mas o correto seria 400 (Bad Request), pois o cliente enviou dados inválidos, não que o recurso não foi encontrado.
-
-- No método `removeAgente`, quando não encontra o agente, a mensagem diz "Caso não encontrado!", que pode confundir. Ajuste para "Agente não encontrado!" para ficar coerente.
-
-- No `deleteAgente` e `deleteCaso`, o método `splice` retorna um array com o item removido, mas seu código retorna esse array. É melhor retornar um booleano ou a entidade removida para manter consistência.
-
----
-
-### 5. Falta de implementação dos filtros e ordenações (bônus)
-
-Você tentou implementar filtros e ordenação para casos e agentes, mas não vi essa funcionalidade no código enviado. Isso não impacta a funcionalidade básica, mas é um diferencial importante para melhorar sua nota e a usabilidade da API.
-
-Para implementar filtros, você pode usar `req.query` e filtrar o array retornado pelo repositório. Por exemplo, para filtrar casos por status:
-
-```js
-function getAllCasos(req, res) {
-  let casos = casosRepository.findAll();
-  const { status } = req.query;
-  if (status) {
-    casos = casos.filter(caso => caso.status === status);
-  }
-  res.json(casos);
+  return res
+    .status(400)
+    .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
 }
 ```
 
 ---
 
-## Sobre a organização do projeto 🗂️
+## 6. Organização e arquitetura
 
-Sua estrutura de pastas está correta e segue o padrão esperado, com as pastas `routes`, `controllers`, `repositories`, `utils` e `docs`. Isso é muito bom! 👏
+Você seguiu bem a estrutura modular, com pastas separadas para rotas, controllers e repositories, e o seu `server.js` está configurado para usar as rotas. Isso é excelente! 👏
+
+Só reforço a importância de sempre usar `return` para enviar respostas e evitar que o código continue executando depois de enviar o status, evitando erros de múltiplos envios.
 
 ---
 
-## Recursos para você aprofundar e corrigir os pontos indicados 🚀
+## Recursos recomendados para você aprofundar e corrigir esses pontos:
 
-- Para entender melhor como estruturar e organizar rotas no Express:  
-  https://expressjs.com/pt-br/guide/routing.html
+- Para entender melhor a manipulação correta de arrays e o uso do `this` em JavaScript, veja este vídeo:  
+  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
 
-- Para reforçar o entendimento de status HTTP e tratamento de erros:  
+- Para aprender mais sobre validação de dados e tratamento correto de erros HTTP na API, recomendo:  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
   https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
   https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
 
-- Para aprender a validar dados e controlar o fluxo de requisição/resposta no Express:  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
-
-- Para manipular arrays e implementar filtros eficientes:  
-  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
-
-- Para entender melhor a arquitetura MVC aplicada ao Node.js:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
+- Para entender a importância do uso do `return` ao enviar respostas e evitar erros, veja:  
+  https://youtu.be/RSZHvQomeKE (a partir dos conceitos de fluxo de requisição e resposta)
 
 ---
 
-## Resumo rápido dos principais pontos para focar 🔍
+## 🎯 Resumo rápido para você focar:
 
-- **Valide IDs UUID antes de buscar recursos** para evitar erros e buscas desnecessárias.
-- **Verifique se o agente existe antes de criar ou atualizar casos** para garantir integridade dos dados.
-- **Use `return` ao enviar respostas para interromper o fluxo da função** e evitar múltiplos envios de resposta.
-- **Corrija mensagens e status HTTP para refletir corretamente o tipo de erro** (ex: 400 para dados inválidos, 404 para recurso não encontrado).
-- **Implemente filtros e ordenações nos endpoints para casos e agentes** para enriquecer sua API.
-- **Mantenha consistência nas mensagens e retornos para facilitar o uso da API.**
+- Corrija as funções `deleteAgente` e `deleteCaso` para acessar os arrays diretamente, sem `this`, e ajuste a lógica do `deleteCaso`.
+- Ajuste a validação no `createCaso` para usar `!agente_id` no `if`.
+- Sempre use `return` antes de enviar respostas com `res.status(...).json(...)` para evitar múltiplas respostas.
+- Revise os IDs iniciais para garantir que são UUIDs válidos.
+- Corrija pequenos detalhes de fluxo no PATCH e PUT para evitar que o código continue após enviar resposta.
+- Continue mantendo a arquitetura modular! Isso é um ponto forte seu.
 
 ---
 
-Alessandro, você está no caminho certo! 🚀 Com essas correções e ajustes, sua API vai ficar muito mais robusta, confiável e alinhada com as boas práticas do desenvolvimento backend. Continue firme, revise seu código com calma e não hesite em testar cada endpoint manualmente para entender o fluxo. Estou aqui torcendo pelo seu sucesso! 💪✨
+Alessandro, você já tem uma base muito boa, e com essas correções seu projeto vai ficar bem mais robusto e funcional. 🚀
 
-Se precisar, volte aos vídeos e documentação que te indiquei para reforçar conceitos. Você tem tudo para brilhar! 🌟
+Não desanime! Programar APIs é um processo de aprender, errar, corrigir e evoluir. Estou aqui torcendo pelo seu sucesso! 💪✨
 
-Um grande abraço e até a próxima revisão! 👮‍♂️👨‍💻🚨
+Se precisar, volte aos vídeos que te recomendei e dê uma revisada cuidadosa. Você vai conseguir! 😉
+
+Um grande abraço e bons códigos! 👨‍💻👩‍💻🚓
+
+---
+
+Se quiser, posso te ajudar a montar um passo a passo para corrigir esses pontos. É só pedir!
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
