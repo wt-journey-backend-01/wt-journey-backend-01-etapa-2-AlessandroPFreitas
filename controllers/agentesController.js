@@ -1,12 +1,15 @@
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidv4, validate: uuidValidate, version: uuidVersion } = require("uuid");
 const agentesRepository = require("../repositories/agentesRepository");
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const dataValidation = (data) => {
   const regex = /^\d{4}\/\d{2}\/\d{2}$/;
   return regex.test(data);
 };
+
+// Função para validar se o ID é um UUID v4 válido
+function isValidUUIDv4(id) {
+  return uuidValidate(id) && uuidVersion(id) === 4;
+}
 
 function getAllAgentes(req, res) {
   const agentes = agentesRepository.findAll();
@@ -15,8 +18,8 @@ function getAllAgentes(req, res) {
 
 function getIdAgente(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const agenteId = agentesRepository.findId(id);
   if (!agenteId) {
@@ -52,8 +55,8 @@ function createAgente(req, res) {
 
 function attAgente(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const { nome, dataDeIncorporacao, cargo } = req.body;
   if (!nome || !dataDeIncorporacao || !cargo) {
@@ -83,8 +86,8 @@ function attAgente(req, res) {
 
 function pieceAgente(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const { nome, dataDeIncorporacao, cargo } = req.body;
   const agente = {};
@@ -104,7 +107,7 @@ function pieceAgente(req, res) {
   }
 
   if (Object.keys(agente).length === 0) {
-    res
+    return res
       .status(400)
       .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
   }
@@ -117,8 +120,8 @@ function pieceAgente(req, res) {
 
 function removeAgente(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
 
   const agenteDeletado = agentesRepository.deleteAgente(id);

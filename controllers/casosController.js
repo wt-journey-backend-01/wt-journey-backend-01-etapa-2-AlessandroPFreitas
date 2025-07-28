@@ -1,8 +1,11 @@
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidv4, validate: uuidValidate, version: uuidVersion } = require("uuid");
 const casosRepository = require("../repositories/casosRepository");
 const agentesRepository = require("../repositories/agentesRepository");
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Função para validar se o ID é um UUID v4 válido
+function isValidUUIDv4(id) {
+  return uuidValidate(id) && uuidVersion(id) === 4;
+}
 
 function getAllCasos(req, res) {
   const casos = casosRepository.findAll();
@@ -11,8 +14,8 @@ function getAllCasos(req, res) {
 
 function getIdCasos(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const caso = casosRepository.findId(id);
   if (!caso) {
@@ -24,7 +27,7 @@ function getIdCasos(req, res) {
 function createCaso(req, res) {
   const { titulo, descricao, status, agente_id } = req.body;
 
-  if (!titulo || !descricao || !status || agente_id) {
+  if (!titulo || !descricao || !status || !agente_id) {
     return res
       .status(400)
       .json({ mensagem: "Todos os campos são obrigatorios!" });
@@ -55,8 +58,8 @@ function createCaso(req, res) {
 
 function updateCaso(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const { titulo, descricao, status, agente_id } = req.body;
 
@@ -87,15 +90,15 @@ function updateCaso(req, res) {
 
   const casoAtualizado = casosRepository.attCaso(id, updateCaso);
   if (!casoAtualizado) {
-    res.status(404).json({ mensagem: "O caso não existe!" });
+   return res.status(404).json({ mensagem: "O caso não existe!" });
   }
   return res.status(200).json(casoAtualizado);
 }
 
 function patchCaso(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const { titulo, descricao, status, agente_id } = req.body;
 
@@ -110,7 +113,7 @@ function patchCaso(req, res) {
   if (status !== undefined) {
     const statusPermitidos = ["aberto", "solucionado"];
     if (!statusPermitidos.includes(status)) {
-      res
+    return  res
         .status(400)
         .json({ mensagem: "Status deve ser 'aberto' ou 'solucionado." });
     }
@@ -125,7 +128,7 @@ function patchCaso(req, res) {
   }
 
   if (Object.keys(attCaso).length === 0) {
-    res
+  return  res
       .status(400)
       .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
   }
@@ -139,8 +142,8 @@ function patchCaso(req, res) {
 
 function removeCaso(req, res) {
   const id = req.params.id;
-  if (!uuidRegex.test(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID)" });
+  if (!isValidUUIDv4(id)) {
+    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
   }
   const casoDeletado = casosRepository.deleteCaso(id);
   if (!casoDeletado) {
