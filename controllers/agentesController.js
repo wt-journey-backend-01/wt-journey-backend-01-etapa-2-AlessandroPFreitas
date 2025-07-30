@@ -1,197 +1,187 @@
-const {
-  v4: uuidv4,
-  validate: uuidValidate,
-  version: uuidVersion,
-} = require("uuid");
-const agentesRepository = require("../repositories/agentesRepository");
-
-const dataValidation = (data) => {
-  const regex = /^\d{4}\/\d{2}\/\d{2}$/;
-  return regex.test(data);
-};
-
-function isValidUUIDv4(id) {
-  return uuidValidate(id) && uuidVersion(id) === 4;
-}
-
+const agentesRepository = require('../repositories/agentesRepository')
+const { v4: uuidv4 } = require('uuid')
+const handlerError = require('../utils/errorHandler')
 
 function getAllAgentes(req, res) {
+    try {
+        const { cargo, dataDeIncorporacao, orderBy, order } = req.query
+        let agentes = agentesRepository.findAll()
+        const { dataInicio, dataFim } = req.query
 
-    const { cargo, dataDeIncorporacao, orderBy, order, dataInicio, dataFim } = req.query;
-    let agentes = agentesRepository.findAll();
+        if (dataInicio || dataFim) {
+            agentes = agentes.filter(agente => {
+                const data = new Date(agente.dataDeIncorporacao)
+                const inicio = dataInicio ? new Date(dataInicio) : null
+                const fim = dataFim ? new Date(dataFim) : null
 
-    if (dataInicio || dataFim) {
-      agentes = agentes.filter(agente => {
-        const data = new Date(agente.dataDeIncorporacao);
-        const inicio = dataInicio ? new Date(dataInicio) : null;
-        const fim = dataFim ? new Date(dataFim) : null;
-        return (!inicio || data >= inicio) && (!fim || data <= fim);
-      });
+                return (!inicio || data >= inicio) && (!fim || data <= fim)
+            })
+        }
+
+        if (cargo) {
+            const cargosValidos = ['delegado', 'investigador', 'escrivao', 'policial']
+            if (!cargosValidos.includes(cargo.toLowerCase()))
+                return res.status(400).json({ message: `Cargo inválido. Use um dos seguintes valores: ${cargosValidos.join(', ')}` })
+
+            agentes = agentes.filter(agente =>
+                agente.cargo && agente.cargo.toLowerCase() === cargo.toLowerCase()
+            )
+        }
+
+        if (dataDeIncorporacao) {
+            if (!validarData(dataDeIncorporacao))
+                return res.status(400).json({ message: 'Data de incorporação inválida. Use o formato YYYY-MM-DD e não informe datas futuras.' })
+
+            agentes = agentes.filter(agente => agente.dataDeIncorporacao === dataDeIncorporacao)
+        }
+
+        if (order && order !== 'asc' && order !== 'desc') {
+            return res.status(400).json({ message: "Parâmetro 'order' inválido. Use 'asc' ou 'desc'." })
+        }
+
+        if (orderBy) {
+            const camposValidos = ['nome', 'dataDeIncorporacao', 'cargo']
+            if (!camposValidos.includes(orderBy)) {
+                return res.status(400).json({ message: `Campo para ordenação inválido. Use: ${camposValidos.join(', ')}` })
+            }
+
+            agentes.sort((a, b) => {
+                const ordem = order === 'desc' ? -1 : 1
+                if (a[orderBy] < b[orderBy]) return -1 * ordem
+                if (a[orderBy] > b[orderBy]) return 1 * ordem
+                return 0
+            })
+        }
+
+        res.status(200).json(agentes)
+    } catch (error) {
+        handlerError(res, error)
     }
-
-    if (cargo) {
-      const cargosValidos = ["delegado", "investigador", "escrivao", "policial"];
-      if (!cargosValidos.includes(cargo.toLowerCase()))
-        return res.status(400).json({ mensagem: `Cargo inválido. Use um dos seguintes valores: ${cargosValidos.join(", ")}` });
-
-      agentes = agentes.filter(
-        agente => agente.cargo && agente.cargo.toLowerCase() === cargo.toLowerCase()
-      );
-    }
-
-    if (dataDeIncorporacao) {
-      if (!dataValidation(dataDeIncorporacao))
-        return res.status(400).json({ mensagem: "Data de incorporação inválida. Use o formato YYYY-MM-DD e não informe datas futuras." });
-
-      agentes = agentes.filter(agente => agente.dataDeIncorporacao === dataDeIncorporacao);
-    }
-
-    if (order && order !== "asc" && order !== "desc") {
-      return res.status(400).json({ mensagem: "Parâmetro 'order' inválido. Use 'asc' ou 'desc'." });
-    }
-
-    if (orderBy) {
-      const camposValidos = ["nome", "dataDeIncorporacao", "cargo"];
-      if (!camposValidos.includes(orderBy)) {
-        return res.status(400).json({ mensagem: `Campo para ordenação inválido. Use: ${camposValidos.join(", ")}` });
-      }
-
-      agentes.sort((a, b) => {
-        const ordem = order === "desc" ? -1 : 1;
-        if (a[orderBy] < b[orderBy]) return -1 * ordem;
-        if (a[orderBy] > b[orderBy]) return 1 * ordem;
-        return 0;
-      });
-    }
-
-    if (!Array.isArray(agentes) || agentes.length === 0) {
-      return res.status(404).json({ mensagem: "Nenhum agente encontrado." });
-    }
-
-    return res.status(200).json(agentes);
 }
 
-function getIdAgente(req, res) {
-  const id = req.params.id;
-  if (!isValidUUIDv4(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
-  }
-  const agenteId = agentesRepository.findId(id);
-  if (!agenteId) {
-    return res.status(404).json({ mensagem: "Esse agente não existe!" });
-  }
+function getAgenteById(req, res) {
+    try {
+        const { id } = req.params
+        const agente = agentesRepository.findById(id)
 
-  return res.status(200).json(agenteId);
+        if (!agente)
+            return res.status(404).json({ message: 'Agente não encontrado.' })
+
+        res.status(200).json(agente)
+    } catch (error) {
+        handlerError(res, error)
+    }
 }
 
 function createAgente(req, res) {
-  const { nome, dataDeIncorporacao, cargo } = req.body;
-  if (!nome || !dataDeIncorporacao || !cargo) {
-    return res
-      .status(400)
-      .json({ mensagem: "Todos os campos são obrigatorios!" });
-  }
+    try {
+        const { nome, dataDeIncorporacao, cargo } = req.body
+        const id = uuidv4()
 
-  if (!dataValidation(dataDeIncorporacao)) {
-    return res
-      .status(400)
-      .json({ mensagem: "Data incorreta, tente nesse formato YYYY/MM/DD." });
-  }
-  const agente = {
-    id: uuidv4(),
-    nome,
-    dataDeIncorporacao,
-    cargo,
-  };
+        if (!validarData(dataDeIncorporacao))
+            return res.status(400).json({ message: 'Data de incorporação inválida. Use o formato YYYY-MM-DD e não informe datas futuras.' })
 
-  const newAgente = agentesRepository.newAgente(agente);
-  return res.status(201).json(newAgente);
-}
+        if (!nome || !dataDeIncorporacao || !cargo)
+            return res.status(400).json({ message: 'Todos os campos são obrigatórios.' })
 
-function attAgente(req, res) {
-  const id = req.params.id;
-  if (!isValidUUIDv4(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
-  }
-  const { nome, dataDeIncorporacao, cargo } = req.body;
-  if (!nome || !dataDeIncorporacao || !cargo) {
-    return res
-      .status(400)
-      .json({ mensagem: "Todos os campo são obrigatorios!" });
-  }
+        const newAgente = { id, nome, dataDeIncorporacao, cargo }
 
-  if (!dataValidation(dataDeIncorporacao)) {
-    return res
-      .status(400)
-      .json({ mensagem: "Data incorreta, tente nesse formato YYYY/MM/DD." });
-  }
-
-  const agente = {
-    nome,
-    dataDeIncorporacao,
-    cargo,
-  };
-
-  const updateAgente = agentesRepository.putAgente(id, agente);
-  if (!updateAgente) {
-    return res.status(404).json({ mensagem: "O agente não existe" });
-  }
-  return res.status(200).json(updateAgente);
-}
-
-function pieceAgente(req, res) {
-  const id = req.params.id;
-  if (!isValidUUIDv4(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
-  }
-  const { nome, dataDeIncorporacao, cargo } = req.body;
-  const agente = {};
-  if (nome !== undefined) {
-    agente.nome = nome;
-  }
-  if (dataDeIncorporacao !== undefined) {
-    if (!dataValidation(dataDeIncorporacao)) {
-      return res
-        .status(400)
-        .json({ mensagem: "Data incorreta, tente nesse formato YYYY/MM/DD." }); // padronizado
+        agentesRepository.create(newAgente)
+        res.status(201).json(newAgente)
+    } catch (error) {
+        handlerError(res, error)
     }
-    agente.dataDeIncorporacao = dataDeIncorporacao;
-  }
-  if (cargo !== undefined) {
-    agente.cargo = cargo;
-  }
-
-  if (Object.keys(agente).length === 0) {
-    return res
-      .status(400)
-      .json({ mensagem: "Pelo menos um campo tem que ser enviado!" });
-  }
-  const updateAgente = agentesRepository.patchAgente(id, agente);
-  if (!updateAgente) {
-    return res.status(404).json({ mensagem: "Esse agente não existe!" });
-  }
-  return res.status(200).json(updateAgente);
 }
 
-function removeAgente(req, res) {
-  const id = req.params.id;
-  if (!isValidUUIDv4(id)) {
-    return res.status(400).json({ mensagem: "ID inválido (deve ser UUID v4)" });
-  }
+function updateAgente(req, res) {
+    try {
+        const { id } = req.params
+        const { nome, dataDeIncorporacao, cargo, id: idBody } = req.body
 
-  const agenteDeletado = agentesRepository.deleteAgente(id);
-  if (!agenteDeletado) {
-    return res.status(404).json({ mensagem: "Agente não encontrado!" });
-  }
+        if(idBody && idBody !== id)
+            return res.status(400).json({message: "O campo 'id' não pode ser alterado."})
 
-  return res.status(204).send();
+        if (!validarData(dataDeIncorporacao))
+            return res.status(400).json({ message: 'Data de incorporação inválida. Use o formato YYYY-MM-DD e não informe datas futuras.' })
+
+        if (!nome || !dataDeIncorporacao || !cargo)
+            return res.status(400).json({ message: 'Todos os campos são obrigatórios.' })
+
+        const agenteAtualizado = agentesRepository.update(id, { nome, dataDeIncorporacao, cargo })
+
+        if (!agenteAtualizado)
+            return res.status(404).json({ message: 'Agente não encontrado.' })
+
+        res.status(200).json(agenteAtualizado)
+    } catch (error) {
+        handlerError(res, error)
+    }
+}
+
+function patchAgente(req, res) {
+    try {
+        const { id } = req.params
+        const updates = req.body
+        const camposValidos = ['nome', 'dataDeIncorporacao', 'cargo']
+
+        if('id' in updates)
+            return res.status(400).json({message: "O campo 'id' não pode ser alterado."})
+
+        const camposAtualizaveis = Object.keys(updates).filter(campo => camposValidos.includes(campo))
+
+        if (updates.dataDeIncorporacao && !validarData(updates.dataDeIncorporacao))
+            return res.status(400).json({ message: 'Data de incorporação inválida. Use o formato YYYY-MM-DD e não informe datas futuras.' })
+
+        if (camposAtualizaveis.length === 0)
+            return res.status(400).json({ message: 'Deve conter pelo menos um campo válido para atualização.' })
+
+        const patchedAgente = agentesRepository.patchById(id, updates)
+
+        if (!patchedAgente)
+            return res.status(404).json({ message: 'Agente não encontrado.' })
+
+        res.status(200).json(patchedAgente)
+    } catch (error) {
+        handlerError(res, error)
+    }
+}
+
+function deleteAgente(req, res) {
+    try {
+        const { id } = req.params
+        const agente = agentesRepository.findById(id)
+
+        if (!agente)
+            return res.status(404).json({ message: 'Agente não encontrado.' })
+
+        agentesRepository.deleteById(id)
+        res.status(204).send()
+    } catch (error) {
+        handlerError(res, error)
+    }
+}
+
+function validarData(dateString) {
+    const regex = /^\d{4}-\d{2}-\d{2}$/
+
+    if (!regex.test(dateString)) return false
+
+    const date = new Date(dateString)
+    const today = new Date()
+
+    if (isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== dateString)
+        return false
+
+    if (date > today) return false
+
+    return true
 }
 
 module.exports = {
-  getAllAgentes,
-  getIdAgente,
-  createAgente,
-  attAgente,
-  pieceAgente,
-  removeAgente,
-};
+    getAllAgentes,
+    getAgenteById,
+    createAgente,
+    updateAgente,
+    patchAgente,
+    deleteAgente
+}

@@ -1,19 +1,12 @@
 const express = require('express')
-const router = express.Router();
-const casosController = require('../controllers/casosController');
+const router = express.Router()
+const agentesController = require('../controllers/agentesController.js')
 
-
-
-router.get('/casos', casosController.getAllCasos)
-
-router.get('/casos/:id', casosController.getIdCasos)
-
-router.post('/casos', casosController.createCaso);
-
-router.put('/casos/:id', casosController.updateCaso);
-
-router.patch('/casos/:id', casosController.patchCaso);
-
-router.delete('/casos/:id', casosController.removeCaso);
+router.get('/', agentesController.getAllAgentes)
+router.get('/:id', agentesController.getAgenteById)
+router.post('/', agentesController.createAgente)
+router.put('/:id', agentesController.updateAgente)
+router.patch('/:id', agentesController.patchAgente)
+router.delete('/:id', agentesController.deleteAgente)
 
 module.exports = router

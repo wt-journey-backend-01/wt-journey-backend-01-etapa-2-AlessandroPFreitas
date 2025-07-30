@@ -1,64 +1,69 @@
 const casos = [
-  {
-    id: "d5e6a8f7-3c56-4e93-8d7f-1c2b3e4f5a6b",
-    titulo: "homicidio",
-    descricao:
-      "Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.",
-    status: "aberto",
-    agente_id: "d7ea7f4c-9e32-4b8c-9e41-7c4c7c9a1c2e",
-  },
-];
+    {
+        id: "f5fb2ad5-22a8-4cb4-90f2-8733517a0d46",
+        titulo: "homicidio",
+        descricao: "Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.",
+        status: "aberto",
+        agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1" 
+    
+    },
+    //Demais objetos
+]
 
 function findAll() {
-  return casos;
+    return casos
 }
 
-function findId(id) {
-  return casos.find((caso) => caso.id === id);
+function findById(id){
+    return casos.find(caso => caso.id === id)
 }
 
-function addCaso(novoCaso) {
-  casos.push(novoCaso);
-  return novoCaso;
+function create(newCase){
+    casos.push(newCase)
 }
 
-function attCaso(id, updatedCaso) {
-  const casoIndex = casos.findIndex((caso) => caso.id === id);
-  if (casoIndex === -1) {
-    return undefined;
-  }
-  casos[casoIndex] = { ...casos[casoIndex], ...updatedCaso };
-  return casos[casoIndex];
+function update(id, titulo, descricao, status, agente_id) {
+    const caso = casos.find(c => c.id === id)
+
+    if (caso) {
+        caso.titulo = titulo
+        caso.descricao = descricao
+        caso.status = status
+        caso.agente_id = agente_id
+        return caso
+    }
+
+    return null
 }
 
-function partialCaso(id, updateCaso) {
-  const casoIndex = casos.findIndex((caso) => caso.id === id);
-  if (casoIndex === -1) {
-    return undefined;
-  }
+function patchById(id, updates){ // Updates é o objeto no qual virão os campos a serem atualizados
+    const caso = casos.find(caso => caso.id === id)
 
-  if (updateCaso.titulo !== undefined) {
-    casos[casoIndex].titulo = updateCaso.titulo;
-  }
-  if (updateCaso.descricao !== undefined) {
-    casos[casoIndex].descricao = updateCaso.descricao;
-  }
-  if (updateCaso.status !== undefined) {
-    casos[casoIndex].status = updateCaso.status;
-  }
-  if (updateCaso.agente_id !== undefined) {
-    casos[casoIndex].agente_id = updateCaso.agente_id;
-  }
+    if(!caso) return null
 
-  return casos[casoIndex];
+    Object.keys(updates).forEach(prop => { // Object.keys pega as propriedades do (objeto). 
+        if(updates[prop] !== undefined) // Prop é uma variável utilizada no forEach para representar cada propriedade
+            caso[prop] = updates[prop]
+    })
+
+    return caso
 }
 
-function deleteCaso(id) {
-  const casoIndex = casos.findIndex((caso) => caso.id === id);
-  if (casoIndex === -1) return null;
+function deleteById(id){
+    const index = casos.findIndex(caso => caso.id === id)
 
-  const [removido] = casos.splice(casoIndex, 1);
-  return removido;
+    if(index !== -1){
+        const removido = casos.splice(index, 1) // Retorna um array
+        return removido[0] // Retorna somente o elemento do array
+    } else
+        return null
 }
 
-module.exports = { findAll, findId, addCaso, attCaso, partialCaso, deleteCaso };
+module.exports = {
+    findAll,
+    findById,
+    create,
+    update,
+    patchById,
+    deleteById
+}

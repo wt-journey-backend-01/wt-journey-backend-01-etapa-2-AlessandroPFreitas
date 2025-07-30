@@ -1,62 +1,66 @@
 const agentes = [
-  {
-    id: "d7ea7f4c-9e32-4b8c-9e41-7c4c7c9a1c2e",
-    nome: "Rommel Carneiro",
-    dataDeIncorporacao: "1992/10/04",
-    cargo: "delegado",
-  },
-  {
-    id: "d7ea7f4c-9e32-4b8c-9e41-7c4c7c9a1c2e",
-    nome: "Rommel Carneiro",
-    dataDeIncorporacao: "1930/10/04",
-    cargo: "delegado",
-  },
-];
+{
+  "id": "401bccf5-cf9e-489d-8412-446cd169a0f1",
+  "nome": "Rommel Carneiro",
+  "dataDeIncorporacao": "1992-10-04",
+  "cargo": "delegado"
+},
+]
 
-function findAll() {
-  return agentes;
+function findAll(){
+    return agentes
 }
 
-function findId(id) {
-  const agenteId = agentes.find((agente) => agente.id === id);
-  return agenteId;
+function findById(id) {
+    return agentes.find(agente => agente.id === id) 
 }
 
-function newAgente(agente) {
-  agentes.push(agente);
-  return agente;
+function create(novoAgente){
+    agentes.push(novoAgente)
 }
 
-function putAgente(id, updateAgente) {
-  const agenteIndex = agentes.findIndex((agente) => agente.id === id);
-  if (agenteIndex === -1) {
-    return undefined;
-  }
-  agentes[agenteIndex] = { ...agentes[agenteIndex], ...updateAgente };
-  return agentes[agenteIndex];
+function update(id, { nome, dataDeIncorporacao, cargo }) {
+    const agente = agentes.find(agente => agente.id === id)
+    if (!agente) return null
+
+    agente.nome = nome
+    agente.dataDeIncorporacao = dataDeIncorporacao
+    agente.cargo = cargo
+
+    return agente
 }
 
-function patchAgente(id, updateAgente) {
-  const agenteIndex = agentes.findIndex((agente) => agente.id === id);
-  if (agenteIndex === -1) {
-    return undefined;
-  }
-  agentes[agenteIndex] = { ...agentes[agenteIndex], ...updateAgente };
-  return agentes[agenteIndex];
+function patchById(id, updates){
+    const agente = agentes.find(agente => agente.id === id)
+    
+    if(!agente)
+        return null
+
+    delete updates.id
+
+    Object.keys(updates).forEach(prop => {
+        if(updates[prop] !== undefined)
+            agente[prop] = updates[prop]
+    })
+
+    return agente
 }
 
-function deleteAgente(id) {
- const index = agentes.findIndex(agente => agente.id === id);
-  if (index === -1) return null;
-  const [removido] = agentes.splice(index, 1);
-  return removido; 
-  }
+function deleteById(id) {
+    const index = agentes.findIndex(agente => agente.id === id)
+
+    if(index !== -1){
+        const removido = agentes.splice(index, 1)
+        return removido[0]
+    } else
+        return null
+}
 
 module.exports = {
-  findAll,
-  findId,
-  newAgente,
-  putAgente,
-  patchAgente,
-  deleteAgente,
-};
+    findAll,
+    findById,
+    create,
+    update,
+    patchById,
+    deleteById
+}
