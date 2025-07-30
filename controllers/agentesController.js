@@ -32,7 +32,11 @@ function getAllAgentes(req, res) {
     );
   }
 
-  res.json(agentes);
+  if (!Array.isArray(agentes) || agentes.length === 0) {
+    return res.status(404).json({ mensagem: "Nenhum agente encontrado!" });
+  }
+
+  return res.json(agentes);
 }
 
 function getIdAgente(req, res) {
@@ -117,7 +121,7 @@ function pieceAgente(req, res) {
     if (!dataValidation(dataDeIncorporacao)) {
       return res
         .status(400)
-        .json({ mensagem: "A data está no formato errado!" });
+        .json({ mensagem: "Data incorreta, tente nesse formato YYYY/MM/DD." }); // padronizado
     }
     agente.dataDeIncorporacao = dataDeIncorporacao;
   }

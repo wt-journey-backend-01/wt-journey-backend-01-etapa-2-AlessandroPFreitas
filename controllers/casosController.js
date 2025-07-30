@@ -14,19 +14,19 @@ function isValidUUIDv4(id) {
 function getAllCasos(req, res) {
   let casos = casosRepository.findAll();
 
-  if (req.query.search !== undefined) {
-    const termo = req.query.search.trim().toLowerCase();
-    if (!termo) {
-      return res
-        .status(400)
-        .json({ mensagem: "Informe um termo de busca válido!" });
-    }
-    casos = casos.filter(
-      (caso) =>
-        (caso.titulo && caso.titulo.toLowerCase().includes(termo)) ||
-        (caso.descricao && caso.descricao.toLowerCase().includes(termo))
-    );
-  }
+  // if (req.query.search !== undefined) {
+  //   const termo = req.query.search.trim().toLowerCase();
+  //   if (!termo) {
+  //     return res
+  //       .status(400)
+  //       .json({ mensagem: "Informe um termo de busca válido!" });
+  //   }
+  //   casos = casos.filter(
+  //     (caso) =>
+  //       (caso.titulo && caso.titulo.toLowerCase().includes(termo)) ||
+  //       (caso.descricao && caso.descricao.toLowerCase().includes(termo))
+  //   );
+  // }
 
   // Filtro por status
   if (req.query.status !== undefined) {
