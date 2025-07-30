@@ -16,7 +16,7 @@ function isValidUUIDv4(id) {
 
 
 function getAllAgentes(req, res) {
-  try {
+
     const { cargo, dataDeIncorporacao, orderBy, order, dataInicio, dataFim } = req.query;
     let agentes = agentesRepository.findAll();
 
@@ -69,10 +69,6 @@ function getAllAgentes(req, res) {
     }
 
     return res.status(200).json(agentes);
-  } catch (error) {
-    console.error("Erro ao buscar agentes:", error);
-    return res.status(500).json({ mensagem: "Erro interno do servidor ao buscar agentes." });
-  }
 }
 
 function getIdAgente(req, res) {

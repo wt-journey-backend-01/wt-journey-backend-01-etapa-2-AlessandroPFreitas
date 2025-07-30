@@ -14,21 +14,7 @@ function isValidUUIDv4(id) {
 function getAllCasos(req, res) {
   let casos = casosRepository.findAll();
 
-  // if (req.query.search !== undefined) {
-  //   const termo = req.query.search.trim().toLowerCase();
-  //   if (!termo) {
-  //     return res
-  //       .status(400)
-  //       .json({ mensagem: "Informe um termo de busca válido!" });
-  //   }
-  //   casos = casos.filter(
-  //     (caso) =>
-  //       (caso.titulo && caso.titulo.toLowerCase().includes(termo)) ||
-  //       (caso.descricao && caso.descricao.toLowerCase().includes(termo))
-  //   );
-  // }
 
-  // Filtro por status
   if (req.query.status !== undefined) {
     const status = req.query.status;
     if (status !== "aberto" && status !== "solucionado") {
@@ -39,7 +25,6 @@ function getAllCasos(req, res) {
     casos = casos.filter((caso) => caso.status === status);
   }
 
-  // Filtro por agente_id
   if (req.query.agente_id !== undefined) {
     const agente_id = req.query.agente_id;
     if (!isValidUUIDv4(agente_id)) {
@@ -54,12 +39,11 @@ function getAllCasos(req, res) {
     casos = casos.filter((caso) => caso.agente_id === agente_id);
   }
 
-  // Só retorna no fim
   if (!Array.isArray(casos) || casos.length === 0) {
     return res.status(404).json({ mensagem: "Nenhum caso encontrado!" });
   }
 
-  // return res.json(casos);
+  return res.json(casos);
 }
 
 function getIdCasos(req, res) {

@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router();
 const casosController = require('../controllers/casosController');
 
-// router.get('/casos/search', casosController.getAllCasos);
+
 
 router.get('/casos', casosController.getAllCasos)
 
