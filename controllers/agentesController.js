@@ -1,4 +1,8 @@
-const { v4: uuidv4, validate: uuidValidate, version: uuidVersion } = require("uuid");
+const {
+  v4: uuidv4,
+  validate: uuidValidate,
+  version: uuidVersion,
+} = require("uuid");
 const agentesRepository = require("../repositories/agentesRepository");
 
 const dataValidation = (data) => {
@@ -6,13 +10,28 @@ const dataValidation = (data) => {
   return regex.test(data);
 };
 
-// Função para validar se o ID é um UUID v4 válido
 function isValidUUIDv4(id) {
   return uuidValidate(id) && uuidVersion(id) === 4;
 }
 
 function getAllAgentes(req, res) {
-  const agentes = agentesRepository.findAll();
+  const { sort, cargo } = req.query;
+  let agentes = agentesRepository.findAll();
+
+  if (cargo) {
+    agentes = agentes.filter((agente) => agente.cargo === cargo);
+  }
+
+  if (sort === "dataDeIncorporacao") {
+    agentes = agentes.sort(
+      (a, b) => new Date(a.dataDeIncorporacao) - new Date(b.dataDeIncorporacao)
+    );
+  } else if (sort === "-dataDeIncorporacao") {
+    agentes = agentes.sort(
+      (a, b) => new Date(b.dataDeIncorporacao) - new Date(a.dataDeIncorporacao)
+    );
+  }
+
   res.json(agentes);
 }
 

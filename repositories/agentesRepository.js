@@ -1,8 +1,14 @@
 const agentes = [
   {
-    id: "401bccf5-cf9e-489d-8412-446cd169a0f1",
+    id: "d7ea7f4c-9e32-4b8c-9e41-7c4c7c9a1c2e",
     nome: "Rommel Carneiro",
     dataDeIncorporacao: "1992/10/04",
+    cargo: "delegado",
+  },
+  {
+    id: "d7ea7f4c-9e32-4b8c-9e41-7c4c7c9a1c2e",
+    nome: "Rommel Carneiro",
+    dataDeIncorporacao: "1930/10/04",
     cargo: "delegado",
   },
 ];

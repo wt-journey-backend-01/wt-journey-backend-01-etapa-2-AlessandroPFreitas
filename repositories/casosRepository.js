@@ -1,11 +1,11 @@
 const casos = [
   {
-    id: "f5fb2ad5-22a8-4cb4-90f2-8733517a0d46",
+    id: "d5e6a8f7-3c56-4e93-8d7f-1c2b3e4f5a6b",
     titulo: "homicidio",
     descricao:
       "Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.",
     status: "aberto",
-    agente_id: "401bccf5-cf9e-489d-8412-446cd169a0f1",
+    agente_id: "d7ea7f4c-9e32-4b8c-9e41-7c4c7c9a1c2e",
   },
 ];
 
