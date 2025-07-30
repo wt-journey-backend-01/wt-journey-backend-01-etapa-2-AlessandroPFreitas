@@ -14,29 +14,65 @@ function isValidUUIDv4(id) {
   return uuidValidate(id) && uuidVersion(id) === 4;
 }
 
+
 function getAllAgentes(req, res) {
-  const { sort, cargo } = req.query;
-  let agentes = agentesRepository.findAll();
+  try {
+    const { cargo, dataDeIncorporacao, orderBy, order, dataInicio, dataFim } = req.query;
+    let agentes = agentesRepository.findAll();
 
-  if (cargo) {
-    agentes = agentes.filter((agente) => agente.cargo === cargo);
+    if (dataInicio || dataFim) {
+      agentes = agentes.filter(agente => {
+        const data = new Date(agente.dataDeIncorporacao);
+        const inicio = dataInicio ? new Date(dataInicio) : null;
+        const fim = dataFim ? new Date(dataFim) : null;
+        return (!inicio || data >= inicio) && (!fim || data <= fim);
+      });
+    }
+
+    if (cargo) {
+      const cargosValidos = ["delegado", "investigador", "escrivao", "policial"];
+      if (!cargosValidos.includes(cargo.toLowerCase()))
+        return res.status(400).json({ mensagem: `Cargo inválido. Use um dos seguintes valores: ${cargosValidos.join(", ")}` });
+
+      agentes = agentes.filter(
+        agente => agente.cargo && agente.cargo.toLowerCase() === cargo.toLowerCase()
+      );
+    }
+
+    if (dataDeIncorporacao) {
+      if (!dataValidation(dataDeIncorporacao))
+        return res.status(400).json({ mensagem: "Data de incorporação inválida. Use o formato YYYY-MM-DD e não informe datas futuras." });
+
+      agentes = agentes.filter(agente => agente.dataDeIncorporacao === dataDeIncorporacao);
+    }
+
+    if (order && order !== "asc" && order !== "desc") {
+      return res.status(400).json({ mensagem: "Parâmetro 'order' inválido. Use 'asc' ou 'desc'." });
+    }
+
+    if (orderBy) {
+      const camposValidos = ["nome", "dataDeIncorporacao", "cargo"];
+      if (!camposValidos.includes(orderBy)) {
+        return res.status(400).json({ mensagem: `Campo para ordenação inválido. Use: ${camposValidos.join(", ")}` });
+      }
+
+      agentes.sort((a, b) => {
+        const ordem = order === "desc" ? -1 : 1;
+        if (a[orderBy] < b[orderBy]) return -1 * ordem;
+        if (a[orderBy] > b[orderBy]) return 1 * ordem;
+        return 0;
+      });
+    }
+
+    if (!Array.isArray(agentes) || agentes.length === 0) {
+      return res.status(404).json({ mensagem: "Nenhum agente encontrado." });
+    }
+
+    return res.status(200).json(agentes);
+  } catch (error) {
+    console.error("Erro ao buscar agentes:", error);
+    return res.status(500).json({ mensagem: "Erro interno do servidor ao buscar agentes." });
   }
-
-  if (sort === "dataDeIncorporacao") {
-    agentes = agentes.sort(
-      (a, b) => new Date(a.dataDeIncorporacao) - new Date(b.dataDeIncorporacao)
-    );
-  } else if (sort === "-dataDeIncorporacao") {
-    agentes = agentes.sort(
-      (a, b) => new Date(b.dataDeIncorporacao) - new Date(a.dataDeIncorporacao)
-    );
-  }
-
-  if (!Array.isArray(agentes) || agentes.length === 0) {
-    return res.status(404).json({ mensagem: "Nenhum agente encontrado!" });
-  }
-
-  return res.json(agentes);
 }
 
 function getIdAgente(req, res) {
